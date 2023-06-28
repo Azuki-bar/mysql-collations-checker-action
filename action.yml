@@ -1,0 +1,101 @@
+name: Check MySQL Tables Collation
+description: |
+  This composite action tests table collation.
+  Succeed when collation in all tables equal `accepted_collation` input.
+
+inputs:
+  table_definitions:
+    description: |
+      Specify path to table definitions.
+      accept asterisk to expand path.
+    required: true
+  mysql_version:
+    description: |
+      Specify MySQL Version. if not specified, use latest.
+      Workflows accepts https://hub.docker.com/_/mysql tags value like `8.0.33-debian`.
+    default: latest
+    required: false
+  accepted_collation:
+    description: |
+      Specify accepted collation value.
+      eg) `utf8mb4_general_ci`.
+    required: true
+  ignore_tables:
+    description: Specify ignored table name.
+    required: false
+    default: ""
+
+outputs:
+  invalid_tables:
+    description: |
+      return invalid tables list formatted in JSON.
+      JSON has 2 fields. `name` and `collation`.
+      eg) [{name: "table1", "collation": "utf8mb4_general_ci"}]
+    value: ${{ steps.random-number-generator.outputs.random-id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Join Table Definitions
+      shell: bash
+      run: |
+        # expand wildcards
+        cat <<EOF | xargs -I{} sh -c 'ls {}' > target_files
+          ${{ inputs.table_definitions }}
+        EOF
+
+        cat target_files | xargs -I{} --verbose cat {} >> tables.sql
+
+    - name: Up MySQL Container
+      id: up-container
+      shell: bash
+      run: |
+        docker run --detach \
+          --cidfile docker_mysql.cid \
+          --publish 3306:3306 \
+          --env MYSQL_ALLOW_EMPTY_PASSWORD=yes \
+          --env MYSQL_DATABASE=test \
+          mysql:${{ inputs.mysql_version }}
+
+        echo "container_id=$(cat docker_mysql.cid)" >> $GITHUB_OUTPUT
+    - name: Wait Readiness
+      shell: bash
+      run: |
+        while ! mysqladmin ping --host 127.0.0.1 --port 3306 --user root;do
+          # check mysql container running
+          docker ps -a --filter id=${{ steps.up-container.outputs.container_id }} --format="{{json .}}" |jq --exit-status '.State == "running"'
+          if [[ $? -ne 0 ]];then
+           exit 1;
+          fi
+          sleep 1;
+        done
+    - name: Create tables
+      shell: bash
+      run: |
+        cat tables.sql | mysql --host 127.0.0.1 --port 3306 --user root test
+    - name: Create Ignored List
+      shell: bash
+      run: |
+        cat <<EOF > ignore_tables
+        ${{ inputs.ignore_tables }}
+        EOF
+    - name: Query Collations
+      shell: bash
+      run: |
+        QUERY="SELECT TABLE_NAME, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE table_schema='test';"
+        echo $QUERY | mysql --host 127.0.0.1 --port 3306 --user root --skip-column-names --database mysql > collations.result
+
+    - name: Stop MySQL Container
+      shell: bash
+      run: |
+        docker stop ${{ steps.up-container.outputs.container_id }}
+
+    - name: Get Invalid Tables
+      id: get-invalid-tables
+      shell: bash
+      run: |
+        ./tsvFilter.mjs ${{ inputs.accepted_collation }} collations.result ignore_tables > invalid.json
+        echo "invalid_tables=$(cat invalid.json)" >> $GITHUB_OUTPUT
+    - name: Assert Invalid
+      shell: bash
+      run: cat invalid.json | jq --exit-status '. |length == 0'
