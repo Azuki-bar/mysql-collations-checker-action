@@ -58,6 +58,7 @@ runs:
           mysql:${{ inputs.mysql_version }}
 
         echo "container_id=$(cat docker_mysql.cid)" >> $GITHUB_OUTPUT
+
     - name: Wait Readiness
       shell: bash
       run: |
@@ -69,16 +70,19 @@ runs:
           fi
           sleep 1;
         done
+
     - name: Create tables
       shell: bash
       run: |
         cat tables.sql | mysql --host 127.0.0.1 --port 3306 --user root test
+
     - name: Create Ignored List
       shell: bash
       run: |
         cat <<EOF > ignore_tables
         ${{ inputs.ignore_tables }}
         EOF
+
     - name: Query Collations
       shell: bash
       run: |
@@ -94,8 +98,9 @@ runs:
       id: get-invalid-tables
       shell: bash
       run: |
-        ./tsvFilter.mjs ${{ inputs.expect_collation }} collations.result ignore_tables > invalid.json
+        ${{ github.action_path }}/tsvFilter.mjs ${{ inputs.expect_collation }} collations.result ignore_tables > invalid.json
         echo "invalid_tables=$(cat invalid.json)" >> $GITHUB_OUTPUT
+
     - name: Assert Invalid
       shell: bash
       run: cat invalid.json | jq --exit-status '. |length == 0'
