@@ -12,7 +12,7 @@ steps:
       table_definitions: |
         db/foo.sql
         db/bar.*.sql
-      accepted_collation: utf8mb4_general_ci
+      expect_collation: utf8mb4_general_ci
 ```
 
 ## inputs
@@ -23,9 +23,9 @@ this input expects white space or newline seperated list.
 
 accept asterisk to expand path.
 
-### accepted_collation
+### expect_collation
 
-Specify accepted collation value, For example, `utf8mb4_general_ci`.
+Specify expected collation value, For example, `utf8mb4_general_ci`.
 
 ### mysql_version
 Specify MySQL Version. if not specified, use `latest`.
@@ -45,7 +45,7 @@ steps:
       table_definitions: |
         db/foo.sql
         db/bar.*.sql
-      accepted_collation: utf8mb4_general_ci
+      expect_collation: utf8mb4_general_ci
       ignore_tables: |
         table1
         table2
