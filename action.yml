@@ -9,17 +9,17 @@ inputs:
       Specify path to table definitions.
       accept asterisk to expand path.
     required: true
+  accepted_collation:
+    description: |
+      Specify accepted collation value.
+      eg) `utf8mb4_general_ci`.
+    required: true
   mysql_version:
     description: |
       Specify MySQL Version. if not specified, use latest.
       Workflows accepts https://hub.docker.com/_/mysql tags value like `8.0.33-debian`.
     default: latest
     required: false
-  accepted_collation:
-    description: |
-      Specify accepted collation value.
-      eg) `utf8mb4_general_ci`.
-    required: true
   ignore_tables:
     description: Specify ignored table name.
     required: false
