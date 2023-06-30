@@ -1,13 +1,13 @@
-# mysql-collations-action
-Actions workflow for check collation of MySQL tables with table definitions.
+# mysql-collations-checker-action
+Actions workflow for check collation of MySQL tables.
 
 ## How To Use
 
-see [actions.yml](https://github.com/Azuki-bar/mysql-collations-action/blob/412738bf3dc06d5aaf0116b1b3d78cb5e4e6a782/action.yml).
+see [actions.yml](https://github.com/Azuki-bar/mysql-collations-checker-action/blob/main/action.yml).
 
 ```yml
 steps:
-  - uses: Azuki-bar/mysql-collations-action@main
+  - uses: Azuki-bar/mysql-collations-checker-action@main
     with:
       table_definitions: |
         db/foo.sql
@@ -40,7 +40,7 @@ this input expects white space or new line sererated list.
 
 ```yml
 steps:
-  - uses: Azuki-bar/mysql-collations-action@main
+  - uses: Azuki-bar/mysql-collations-checker-action@main
     with:
       table_definitions: |
         db/foo.sql
